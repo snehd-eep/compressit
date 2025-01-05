@@ -114,10 +114,10 @@ func UploadAndCompressPDF(c *gin.Context) {
 			"error": "Failed to compress the file: " + err.Error(),
 		})
 
-	case <-time.After(30 * time.Second):
-		log.Println("File compression timed out")
-		c.JSON(http.StatusRequestTimeout, gin.H{
-			"error": "File compression timed out",
-		})
+		//case <-time.After(30 * time.Second):
+		//	log.Println("File compression timed out")
+		//	c.JSON(http.StatusRequestTimeout, gin.H{
+		//		"error": "File compression timed out",
+		//	})
 	}
 }
