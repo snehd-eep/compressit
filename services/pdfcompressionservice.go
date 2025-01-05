@@ -2,13 +2,20 @@ package services
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 )
 
 func CompressFile(inputFile, compressionType string) (string, error) {
 	// Define the output file path
-	outputFile := filepath.Join("compressed", filepath.Base(inputFile))
+	outputDir := "compressed"
+	outputFile := filepath.Join(outputDir, filepath.Base(inputFile))
+
+	// Ensure the output directory exists
+	if err := os.MkdirAll(outputDir, os.ModePerm); err != nil {
+		return "", fmt.Errorf("failed to create output directory: %w", err)
+	}
 
 	// Prepare the Ghostscript command based on the compression type
 	var gsArgs []string

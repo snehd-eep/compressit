@@ -2,74 +2,122 @@ package controllers
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"os"
+	"path/filepath"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"testproject/services"
 )
 
 func CompressPdf(c *gin.Context) {
-	// return a test message
+	log.Println("CompressPdf endpoint called")
 	c.JSON(http.StatusOK, gin.H{
 		"message": "CompressPdf",
 	})
 }
 
 func Ping(c *gin.Context) {
-	// return a test message
+	log.Println("Ping endpoint called")
 	c.JSON(http.StatusOK, gin.H{
 		"message": "pong",
 	})
 }
 
 func UploadAndCompressPDF(c *gin.Context) {
-	// return a test message
+	log.Println("UploadAndCompressPDF endpoint called")
+
 	file, _, err := c.Request.FormFile("file")
 	if err != nil {
+		log.Printf("Failed to read the file: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
+			"error": "Failed to read the file: " + err.Error(),
+		})
+		return
+	}
+	defer file.Close()
+	log.Println("File successfully read from the request")
+
+	compressionType := c.DefaultQuery("compression", "medium")
+	log.Printf("Compression type: %s", compressionType)
+
+	tempDir := "./uploads"
+	if err := os.MkdirAll(tempDir, os.ModePerm); err != nil {
+		log.Printf("Failed to create temp directory: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to create temp directory: " + err.Error(),
 		})
 		return
 	}
 
-	// Taking compression type from the query parameter default to medium
-	compressionType := c.DefaultQuery("compression", "medium")
+	tempFilePath := filepath.Join(tempDir, fmt.Sprintf("tempfile_%d.pdf", time.Now().UnixNano()))
+	outFile, err := os.Create(tempFilePath)
+	if err != nil {
+		log.Printf("Failed to save the uploaded file: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to save the uploaded file: " + err.Error(),
+		})
+		return
+	}
+	defer outFile.Close()
+	log.Println("Temporary file created")
+
+	_, err = outFile.ReadFrom(file)
+	if err != nil {
+		log.Printf("Failed to save the uploaded file: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to save the uploaded file: " + err.Error(),
+		})
+		return
+	}
+	log.Println("File successfully saved to temporary location")
+
+	resultChan := make(chan string)
+	errorChan := make(chan error)
 
 	go func() {
-		tempFilePath := "./uploads/tempfile.pdf"
-		outFile, err := os.Create(tempFilePath)
-		if err != nil {
-			return
-		}
-		defer outFile.Close()
-		_, err = outFile.ReadFrom(file)
-		if err != nil {
-			fmt.Println("Error saving file:", err)
-			return
-		}
-
-		// Call service to compress file
 		compressedFilePath, err := services.CompressFile(tempFilePath, compressionType)
 		if err != nil {
-			fmt.Println("Error compressing file:", err)
+			errorChan <- err
+			return
+		}
+		resultChan <- compressedFilePath
+	}()
+
+	select {
+	case compressedFilePath := <-resultChan:
+		log.Println("File successfully compressed")
+		compressedFile, err := os.ReadFile(compressedFilePath)
+		if err != nil {
+			log.Printf("Failed to read the compressed file: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Failed to read the compressed file: " + err.Error(),
+			})
 			return
 		}
 
-		// Send the result back to the user
-		// You can either create a notification system or use a database for tracking.
-		// This could be done via an email or system log.
+		os.Remove(tempFilePath)
+		os.Remove(compressedFilePath)
+		log.Println("Temporary files cleaned up")
 
-		// For simplicity, printing the result
-		fmt.Println("File compressed successfully: ", compressedFilePath)
+		c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"compressed.pdf\""))
+		c.Header("Content-Type", "application/pdf")
+		c.Writer.WriteHeader(http.StatusOK)
+		c.Writer.Write(compressedFile)
+		log.Println("Compressed file sent in response")
 
-		// Clean up the temporary file after processing
-		err = os.Remove(tempFilePath)
-		if err != nil {
-			fmt.Println("Error deleting temporary file:", err)
-		}
-	}()
+	case err := <-errorChan:
+		log.Printf("Failed to compress the file: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to compress the file: " + err.Error(),
+		})
 
-	// Acknowledge the request has been received
-	c.JSON(http.StatusOK, gin.H{"message": "File is being compressed"})
+	case <-time.After(30 * time.Second):
+		log.Println("File compression timed out")
+		c.JSON(http.StatusRequestTimeout, gin.H{
+			"error": "File compression timed out",
+		})
+	}
 }

@@ -12,9 +12,6 @@ go mod tidy
 echo "Building the Go application..."
 go build -o compressit .
 
-# You can also run tests before building
-# echo "Running tests..."
-# go test ./...
 
 # Any other build-related tasks can go here
 echo "Build complete!"
