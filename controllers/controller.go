@@ -29,6 +29,17 @@ func Ping(c *gin.Context) {
 func UploadAndCompressPDF(c *gin.Context) {
 	log.Println("UploadAndCompressPDF endpoint called")
 
+	// Set CORS headers
+	c.Header("Access-Control-Allow-Origin", "*") // Allow all origins, or specify your extension's origin here
+	c.Header("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+	c.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Accept, Authorization")
+
+	// Check if the request is an OPTIONS preflight request
+	if c.Request.Method == "OPTIONS" {
+		c.JSON(http.StatusOK, gin.H{"message": "Preflight request successful"})
+		return
+	}
+
 	file, _, err := c.Request.FormFile("file")
 	if err != nil {
 		log.Printf("Failed to read the file: %v", err)
