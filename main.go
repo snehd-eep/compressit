@@ -16,7 +16,6 @@ func main() {
 		AllowOrigins: []string{
 	    	"*", // Allow all origins (use for testing)
 	    	"https://34.123.178.159.nip.io",  // Your API domain
-	    	"chrome-extension://emamohiiklpnloihcbnnbnbphfkahmnd", // Your Chrome extension ID
 		},
     	})) // This applies default CORS settings, allowing all origins
 
