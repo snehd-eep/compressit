@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"github.com/gin-gonic/gin"
 	"github.com/gin-contrib/cors"
 	"testproject/routes" // Import your routes package
 )
