@@ -13,7 +13,7 @@ func main() {
 	// Start the HTTPS server
 	log.Println("Starting HTTPS server on :443")
 	err := http.ListenAndServeTLS(
-		":443",
+		":7070",
 		"/etc/letsencrypt/live/34.123.178.159.nip.io/fullchain.pem",
 		"/etc/letsencrypt/live/34.123.178.159.nip.io/privkey.pem",
 		r, // Pass the router as the handler
