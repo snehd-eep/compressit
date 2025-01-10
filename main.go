@@ -8,14 +8,11 @@ import (
 )
 
 func main() {
-	// Create a new Gin router
-	r := gin.Default()
+	// Initialize routes from the routes package
+	r := routes.InitializeRoutes()
 
 	// Enable CORS using Gin's built-in middleware
 	r.Use(cors.Default()) // This applies default CORS settings, allowing all origins
-
-	// Initialize and set up your routes from the routes package
-	routes.InitializeRoutes(r)
 
 	// Start the HTTPS server with TLS
 	log.Println("Starting HTTPS server on :7070")
