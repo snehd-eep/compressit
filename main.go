@@ -25,4 +25,12 @@ func main() {
 	if err != nil {
 		log.Fatal("ListenAndServeTLS: ", err)
 	}
+
+	// Start for local
+	// log.Println("Starting HTTP server on :7070")
+	// err := r.Run(":7070") // This will run the server without SSL/TLS
+	// if err != nil {
+	// 	log.Fatal("ListenAndServe: ", err)
+	// }
+
 }
